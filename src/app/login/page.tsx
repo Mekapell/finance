@@ -1,12 +1,133 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+
+import { AuthCard } from "@/components/auth/auth-card";
+import { PasswordInput } from "@/components/auth/password-input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createClient } from "@/lib/supabase/client";
+import { toThaiAuthError } from "@/lib/auth-errors";
+import { loginSchema, type LoginInput } from "@/lib/validations/auth";
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [formError, setFormError] = React.useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { rememberMe: true },
+  });
+
+  async function onSubmit(values: LoginInput) {
+    setFormError(null);
+    const supabase = createClient();
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
+
+    if (error) {
+      setFormError(toThaiAuthError(error.message));
+      return;
+    }
+
+    const redirectTo = searchParams.get("redirect") || "/dashboard";
+    router.push(redirectTo);
+    router.refresh();
+  }
+
+  return (
+    <AuthCard title="เข้าสู่ระบบ" description="ยินดีต้อนรับกลับมา">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+        {formError && (
+          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {formError}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email">อีเมล</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="text-sm text-destructive">{errors.email.message}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="password">รหัสผ่าน</Label>
+          <PasswordInput
+            id="password"
+            autoComplete="current-password"
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="text-sm text-destructive">{errors.password.message}</p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Controller
+              name="rememberMe"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            จดจำฉันไว้
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            ลืมรหัสผ่าน?
+          </Link>
+        </div>
+
+        <Button type="submit" disabled={isSubmitting} className="mt-2">
+          {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+          เข้าสู่ระบบ
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          ยังไม่มีบัญชี?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            สมัครสมาชิก
+          </Link>
+        </p>
+      </form>
+    </AuthCard>
+  );
+}
+
 export default function LoginPage() {
   return (
-    <main className="grid min-h-dvh place-items-center p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">เข้าสู่ระบบ</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          หน้านี้จะสร้างเต็มรูปแบบใน Phase 2
-        </p>
-      </div>
-    </main>
+    <React.Suspense fallback={null}>
+      <LoginForm />
+    </React.Suspense>
   );
 }

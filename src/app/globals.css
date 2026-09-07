@@ -45,6 +45,7 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-thai);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
