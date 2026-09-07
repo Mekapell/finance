@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -18,7 +18,6 @@ import { toThaiAuthError } from "@/lib/auth-errors";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [formError, setFormError] = React.useState<string | null>(null);
 
@@ -34,21 +33,28 @@ function LoginForm() {
 
   async function onSubmit(values: LoginInput) {
     setFormError(null);
-    const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
+    try {
+      const supabase = createClient();
 
-    if (error) {
-      setFormError(toThaiAuthError(error.message));
-      return;
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (error) {
+        setFormError(toThaiAuthError(error.message));
+        return;
+      }
+
+      const redirectTo = searchParams.get("redirect") || "/dashboard";
+      // ใช้ full page navigation แทน router.push เพื่อให้ middleware อ่าน cookie session ใหม่ได้แน่นอน
+      window.location.href = redirectTo;
+    } catch {
+      setFormError(
+        "เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตหรือลองใหม่อีกครั้ง"
+      );
     }
-
-    const redirectTo = searchParams.get("redirect") || "/dashboard";
-    router.push(redirectTo);
-    router.refresh();
   }
 
   return (
