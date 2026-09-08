@@ -49,8 +49,18 @@
 - Export PDF: ใช้ window.print() + CSS ซ่อน sidebar/navbar/bottomnav ตอนพิมพ์ — กดแล้วเลือก "Save as PDF" ในหน้าพิมพ์ของ Safari (ไม่ได้ใช้ library ทำ PDF จริง เพื่อประหยัด dependency)
 - แนบใบเสร็จ: ทำไปแล้วใน Phase 3.1 (ก่อนหน้า Phase 4)
 
-## Phase ถัดไปที่น่าจะตามมา
-- จัดการสต๊อกสินค้า (ตาม description เว็บ) — ยังไม่มีเลย
+## Phase 6 — Polish (เสร็จแล้ว, push แล้ว)
+- Dark mode (next-themes), ปุ่มสลับใน navbar
+- Loading skeleton ทุกหน้า, Empty state component ใช้ร่วมกัน
+- PWA: manifest + icon/apple-icon (ผ่าน next/og ไม่ใช้ไฟล์รูปภายนอก) — เพิ่มลงหน้าจอ iPhone ได้แล้ว
+- Bug fix: วันที่เพี้ยนช่วง 00:00-07:00 (UTC vs เวลาไทย), CSV escape ไม่ถูกต้อง
+
+## ⚠️ พบระหว่างตรวจ RLS/security — สำคัญ ยังไม่ได้แก้ รอผู้ใช้ตัดสินใจ
+เจอ function `public.sync_profiles_to_gsheet()` + extension `pg_net` ในโปรเจกต์ Supabase
+- ฟังก์ชันนี้ส่งข้อมูลทั้งแถว (row_to_json) ไปที่ Google Apps Script URL ภายนอกทุกครั้งที่ trigger ทำงาน
+- **ตอนนี้ไม่มี trigger ผูกอยู่จริง** (เช็คแล้วไม่ทำงานอัตโนมัติ) แต่ตัวฟังก์ชัน+extension ยังอยู่ในระบบ
+- ไม่ใช่สิ่งที่ผมสร้าง — ไม่ทราบที่มา ต้องถามผู้ใช้ว่ารู้จัก/ตั้งใจทำไว้เองหรือเปล่า ก่อนจะลบ
+- Advisor อื่น: `pg_net` อยู่ผิด schema (แนะนำย้าย), leaked password protection ปิดอยู่ (แนะนำเปิดใน Dashboard)
 
 ## บริบทผู้ใช้ (สำคัญ)
 - ใช้ iPhone เครื่องเดียว ไม่มีคอมพิวเตอร์ ทำงานคนเดียว
