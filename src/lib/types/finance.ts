@@ -14,4 +14,5 @@ export type Transaction = {
   occurred_at: string;
   category_id: string | null;
   category: Category | null;
+  receipt_url: string | null;
 };

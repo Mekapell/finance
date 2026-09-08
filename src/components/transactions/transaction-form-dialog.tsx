@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export function TransactionFormDialog({
   open,
   onOpenChange,
   shopId,
+  userId,
   categories,
   editing,
   onSaved,
@@ -35,10 +36,35 @@ export function TransactionFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shopId: string;
+  userId: string;
   categories: Category[];
   editing: Transaction | null;
   onSaved: (transaction: Transaction) => void;
 }) {
+  const [receiptFile, setReceiptFile] = React.useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
+  const [removeReceipt, setRemoveReceipt] = React.useState(false);
+
+  const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5MB
+
+  function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+      return;
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      toast.error("ไฟล์รูปใหญ่เกินไป (สูงสุด 5MB)");
+      return;
+    }
+
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
+    setRemoveReceipt(false);
+  }
+
   const {
     register,
     handleSubmit,
@@ -72,6 +98,9 @@ export function TransactionFormDialog({
               note: "",
             }
       );
+      setReceiptFile(null);
+      setReceiptPreview(editing?.receipt_url ?? null);
+      setRemoveReceipt(false);
     }
   }, [open, editing, reset]);
 
@@ -79,6 +108,31 @@ export function TransactionFormDialog({
 
   async function onSubmit(values: TransactionInput) {
     const supabase = createClient();
+    let receiptUrl = editing?.receipt_url ?? null;
+
+    if (removeReceipt) {
+      receiptUrl = null;
+    }
+
+    if (receiptFile) {
+      const ext = receiptFile.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(path, receiptFile);
+
+      if (uploadError) {
+        toast.error("อัปโหลดรูปไม่สำเร็จ");
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("receipts")
+        .getPublicUrl(path);
+      receiptUrl = publicUrlData.publicUrl;
+    }
+
     const payload = {
       shop_id: shopId,
       type: values.type,
@@ -86,6 +140,7 @@ export function TransactionFormDialog({
       category_id: values.categoryId,
       occurred_at: values.occurredAt,
       note: values.note?.trim() || null,
+      receipt_url: receiptUrl,
     };
 
     const query = editing
@@ -93,7 +148,7 @@ export function TransactionFormDialog({
       : supabase.from("transactions").insert(payload);
 
     const { data, error } = await query
-      .select("id, type, amount, note, occurred_at, category_id, category:categories(id, name, type)")
+      .select("id, type, amount, note, occurred_at, category_id, receipt_url, category:categories(id, name, type)")
       .single();
 
     if (error || !data) {
@@ -196,6 +251,44 @@ export function TransactionFormDialog({
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="note">โน้ต (ไม่บังคับ)</Label>
             <Input id="note" placeholder="เช่น ค่าวัตถุดิบ" {...register("note")} />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>รูปใบเสร็จ (ไม่บังคับ)</Label>
+            {receiptPreview ? (
+              <div className="relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={receiptPreview}
+                  alt="ใบเสร็จ"
+                  className="h-28 w-28 rounded-xl border border-border object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReceiptFile(null);
+                    setReceiptPreview(null);
+                    setRemoveReceipt(true);
+                  }}
+                  className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                  aria-label="ลบรูป"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-accent">
+                <Camera className="size-4" />
+                ถ่ายภาพ / แนบรูป
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleReceiptChange}
+                />
+              </label>
+            )}
           </div>
 
           <DialogFooter>

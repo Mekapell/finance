@@ -17,10 +17,12 @@ type Filter = "all" | TransactionType;
 
 export function TransactionsClient({
   shopId,
+  userId,
   initialCategories,
   initialTransactions,
 }: {
   shopId: string;
+  userId: string;
   initialCategories: Category[];
   initialTransactions: Transaction[];
 }) {
@@ -153,14 +155,28 @@ export function TransactionsClient({
               setFormOpen(true);
             }}
           >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">
-                {t.category?.name ?? "ไม่มีหมวดหมู่"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatDateTH(t.occurred_at)}
-                {t.note ? ` · ${t.note}` : ""}
-              </p>
+            <div className="flex min-w-0 items-center gap-3">
+              {t.receipt_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={t.receipt_url}
+                  alt="ใบเสร็จ"
+                  className="size-10 shrink-0 rounded-lg border border-border object-cover"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(t.receipt_url!, "_blank");
+                  }}
+                />
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {t.category?.name ?? "ไม่มีหมวดหมู่"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDateTH(t.occurred_at)}
+                  {t.note ? ` · ${t.note}` : ""}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <span
@@ -204,6 +220,7 @@ export function TransactionsClient({
         open={formOpen}
         onOpenChange={setFormOpen}
         shopId={shopId}
+        userId={userId}
         categories={categories}
         editing={editing}
         onSaved={handleSaved}
