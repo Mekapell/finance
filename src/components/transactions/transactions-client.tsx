@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Settings2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +30,15 @@ export function TransactionsClient({
   const [formOpen, setFormOpen] = React.useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Transaction | null>(null);
+  const searchParams = useSearchParams();
+
+  React.useEffect(() => {
+    if (searchParams.get("add") === "1") {
+      setFormOpen(true);
+    }
+    // เปิดครั้งเดียวตอนโหลดหน้าจากลิงก์ quick-add พอ ไม่ต้องผูก dependency กับ searchParams ทุกครั้ง
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const totals = React.useMemo(() => {
     const income = transactions
