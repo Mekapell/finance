@@ -55,12 +55,14 @@
 - PWA: manifest + icon/apple-icon (ผ่าน next/og ไม่ใช้ไฟล์รูปภายนอก) — เพิ่มลงหน้าจอ iPhone ได้แล้ว
 - Bug fix: วันที่เพี้ยนช่วง 00:00-07:00 (UTC vs เวลาไทย), CSV escape ไม่ถูกต้อง
 
-## ⚠️ พบระหว่างตรวจ RLS/security — สำคัญ ยังไม่ได้แก้ รอผู้ใช้ตัดสินใจ
-เจอ function `public.sync_profiles_to_gsheet()` + extension `pg_net` ในโปรเจกต์ Supabase
-- ฟังก์ชันนี้ส่งข้อมูลทั้งแถว (row_to_json) ไปที่ Google Apps Script URL ภายนอกทุกครั้งที่ trigger ทำงาน
-- **ตอนนี้ไม่มี trigger ผูกอยู่จริง** (เช็คแล้วไม่ทำงานอัตโนมัติ) แต่ตัวฟังก์ชัน+extension ยังอยู่ในระบบ
-- ไม่ใช่สิ่งที่ผมสร้าง — ไม่ทราบที่มา ต้องถามผู้ใช้ว่ารู้จัก/ตั้งใจทำไว้เองหรือเปล่า ก่อนจะลบ
-- Advisor อื่น: `pg_net` อยู่ผิด schema (แนะนำย้าย), leaked password protection ปิดอยู่ (แนะนำเปิดใน Dashboard)
+## ✅ Google Sheet sync — ทำเสร็จแล้ว (แก้ปัญหาความปลอดภัยที่เจอไปพร้อมกัน)
+- ลบ `sync_profiles_to_gsheet()` ของเก่า (Gemini ทำไว้ ไม่มี secret check, ส่ง row ทั้งแถวตรงๆ) ทิ้งแล้ว
+- สร้างใหม่ 2 ตัว มี secret check ป้องกัน:
+  - `sync_new_user_to_gsheet()` — trigger AFTER INSERT ON shops (เวลาที่ shops row มีข้อมูลครบ join ได้แล้ว) → ส่งไปแท็บ "Users"
+  - `sync_transaction_to_gsheet()` — trigger AFTER INSERT ON transactions → ส่งไปแท็บ "Transactions"
+- ใช้ pg_net (async, ไม่บล็อกการทำงานของแอปแม้ webhook ล่ม)
+- Google Apps Script (โค้ดอยู่ใน Google Sheet ID: 1-OXwIMogKuTP4OHhoNbSxT8CO5iTmZ0n9iQBcJJa3IQ) เขียนหัวข้อคอลัมน์อัตโนมัติจาก key ที่ส่งมา ไม่ต้องพิมพ์หัวข้อเอง
+- ⚠️ ควรตั้ง repo GitHub เป็น private (ถ้ายังไม่ใช่) เพราะ migration ไฟล์นี้มี secret ของ Apps Script ฝังอยู่
 
 ## บริบทผู้ใช้ (สำคัญ)
 - ใช้ iPhone เครื่องเดียว ไม่มีคอมพิวเตอร์ ทำงานคนเดียว
