@@ -78,3 +78,14 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+@media print {
+  aside,
+  header,
+  nav {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
