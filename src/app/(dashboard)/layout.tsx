@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Navbar } from "@/components/dashboard/navbar";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfileWithShop } from "@/lib/data/profile";
 
@@ -27,6 +28,7 @@ export default async function DashboardLayout({
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6">{children}</main>
       </div>
       <BottomNav />
+      <ChatWidget />
     </div>
   );
 }
