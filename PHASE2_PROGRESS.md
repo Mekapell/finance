@@ -67,3 +67,7 @@
 ## บริบทผู้ใช้ (สำคัญ)
 - ใช้ iPhone เครื่องเดียว ไม่มีคอมพิวเตอร์ ทำงานคนเดียว
 - ต้องหาวิธี deliver โค้ดที่ไม่ต้องพึ่งเทอร์มินัล/คอม — แนวทางที่เสนอไว้คือขอ GitHub PAT เพื่อ push ให้ตรงจาก sandbox นี้
+
+## Bug fix เพิ่มเติม (หลัง Phase 6)
+- แชท AI (Gemini) ผ่าน Google AI Studio — เพิ่มแล้ว, รอผู้ใช้ตั้ง GEMINI_API_KEY ใน Vercel เอง
+- แก้ MIDDLEWARE_INVOCATION_FAILED: middleware ไม่มี try/catch รอบ supabase.auth.getUser() ถ้าเน็ต/Supabase สะดุดชั่วคราวจะทำทั้งเว็บพัง (500) — แก้แล้ว fail-open + เช็ค env var ก่อนสร้าง client
