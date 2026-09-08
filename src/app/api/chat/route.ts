@@ -46,29 +46,27 @@ export async function POST(request: NextRequest) {
 
   // ส่งแค่ 10 ข้อความล่าสุด กันบทสนทนายาวเกินไปจนใช้โทเค็นเปลือง
   const recent = messages.slice(-10);
-  const contents = recent.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const flattenedInput = recent
+    .map((m) => `${m.role === "user" ? "ผู้ใช้" : "ผู้ช่วย"}: ${m.content}`)
+    .join("\n");
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          contents,
-          system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          generationConfig: { maxOutputTokens: 500 },
-        }),
-      }
-    );
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+        "Api-Revision": "2026-05-20",
+      },
+      body: JSON.stringify({
+        model,
+        system_instruction: SYSTEM_INSTRUCTION,
+        input: flattenedInput,
+        store: false,
+      }),
+    });
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
@@ -81,7 +79,8 @@ export async function POST(request: NextRequest) {
 
     const data = await res.json();
     const reply: string =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ??
+      data?.output_text ??
+      data?.steps?.at(-1)?.content?.[0]?.text ??
       "ขออภัย ไม่สามารถตอบคำถามนี้ได้ในขณะนี้";
 
     return NextResponse.json({ reply });
