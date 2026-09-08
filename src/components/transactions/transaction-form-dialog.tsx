@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, todayLocalISODate } from "@/lib/utils";
 import {
   transactionSchema,
   type TransactionInput,
@@ -74,7 +74,7 @@ export function TransactionFormDialog({
     formState: { errors, isSubmitting },
   } = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
-    defaultValues: { type: "expense", occurredAt: new Date().toISOString().slice(0, 10) },
+    defaultValues: { type: "expense", occurredAt: todayLocalISODate() },
   });
 
   const type = watch("type");
@@ -94,7 +94,7 @@ export function TransactionFormDialog({
               type: "expense",
               amount: undefined,
               categoryId: "",
-              occurredAt: new Date().toISOString().slice(0, 10),
+              occurredAt: todayLocalISODate(),
               note: "",
             }
       );

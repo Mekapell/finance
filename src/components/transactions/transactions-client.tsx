@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Settings2, Trash2 } from "lucide-react";
+import { Plus, Settings2, Trash2, Receipt } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryManagerDialog } from "@/components/transactions/category-manager-dialog";
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog";
 import { createClient } from "@/lib/supabase/client";
@@ -142,9 +143,11 @@ export function TransactionsClient({
 
       <div className="flex flex-col gap-2 pb-24">
         {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            ยังไม่มีรายการ กดปุ่ม + เพื่อเพิ่มรายการแรก
-          </p>
+          <EmptyState
+            icon={Receipt}
+            title="ยังไม่มีรายการ"
+            description="กดปุ่ม + ด้านล่างเพื่อเพิ่มรายการแรกของคุณ"
+          />
         )}
         {filtered.map((t) => (
           <Card

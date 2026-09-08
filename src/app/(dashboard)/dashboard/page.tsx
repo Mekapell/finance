@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfileWithShop } from "@/lib/data/profile";
+import { todayLocalISODate } from "@/lib/utils";
 import type { Transaction } from "@/lib/types/finance";
 
 function monthKey(date: Date) {
@@ -22,7 +23,7 @@ export default async function DashboardPage() {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
-  const fromDate = sixMonthsAgo.toISOString().slice(0, 10);
+  const fromDate = todayLocalISODate(sixMonthsAgo);
 
   const { data } = await supabase
     .from("transactions")

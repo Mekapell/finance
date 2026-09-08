@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Receipt } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatDateTH, formatTHB } from "@/lib/utils";
 import type { Transaction } from "@/lib/types/finance";
 
@@ -113,9 +114,11 @@ export function DashboardClient({
 
         <div className="flex flex-col gap-2">
           {recent.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              ยังไม่มีรายการ
-            </p>
+            <EmptyState
+              icon={Receipt}
+              title="ยังไม่มีรายการ"
+              description="เริ่มบันทึกรายรับ-รายจ่ายแรกของร้านได้เลย"
+            />
           )}
           {recent.map((t) => (
             <Card key={t.id} className="flex items-center justify-between p-4">

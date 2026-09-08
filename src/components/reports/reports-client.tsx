@@ -1,14 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, PieChart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn, formatDateTH, formatTHB } from "@/lib/utils";
 import type { Transaction } from "@/lib/types/finance";
 
 type Mode = "month" | "year";
+
+function csvField(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
 
 function toCSV(rows: Transaction[]): string {
   const header = ["วันที่", "ประเภท", "หมวดหมู่", "จำนวนเงิน", "โน้ต"];
@@ -16,9 +22,9 @@ function toCSV(rows: Transaction[]): string {
     [
       t.occurred_at,
       t.type === "income" ? "รายรับ" : "รายจ่าย",
-      t.category?.name ?? "",
+      csvField(t.category?.name ?? ""),
       t.amount.toString(),
-      (t.note ?? "").replace(/,/g, " "),
+      csvField(t.note ?? ""),
     ].join(",")
   );
   return ["\uFEFF" + header.join(","), ...lines].join("\n");
@@ -190,9 +196,7 @@ export function ReportsClient({
         <p className="mb-3 text-sm font-medium">แยกตามหมวดหมู่ — {periodLabel}</p>
         <div className="flex flex-col gap-3">
           {breakdown.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              ไม่มีข้อมูลในช่วงนี้
-            </p>
+            <EmptyState icon={PieChart} title="ไม่มีข้อมูลในช่วงนี้" />
           )}
           {breakdown.map((b) => (
             <div key={`${b.type}-${b.name}`}>

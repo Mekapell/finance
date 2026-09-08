@@ -5,6 +5,7 @@ import { LogOut, Settings, Wallet } from "lucide-react";
 
 import { logout } from "@/app/(dashboard)/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +33,9 @@ export function Navbar({ profile }: { profile: ProfileWithShop }) {
 
       <div className="hidden md:block" />
 
-      <DropdownMenu>
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Avatar>
             <AvatarImage src={profile.avatarUrl ?? undefined} alt={profile.shopName} />
@@ -63,7 +66,8 @@ export function Navbar({ profile }: { profile: ProfileWithShop }) {
             </DropdownMenuItem>
           </form>
         </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
