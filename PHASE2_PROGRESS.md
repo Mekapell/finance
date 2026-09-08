@@ -28,11 +28,19 @@
 - [x] app/(dashboard)/layout.tsx
 - [x] components/settings/profile-form.tsx + app/(dashboard)/settings/profile/page.tsx (avatar upload รวมอยู่ในนี้)
 
-## ที่ยังไม่ทำ / ต้องทำต่อ
-- [ ] รัน npm install + next build ในแซนด์บ็อกซ์เพื่อเช็ค error ให้ครบ (ยังไม่ทดสอบ)
-- [ ] ยังไม่ได้ push โค้ดขึ้น GitHub repo (Mekapell/finance) — ต้องคุยเรื่อง Personal Access Token กับผู้ใช้
-- [ ] ยังไม่ได้แจ้ง Environment Variables / ขั้นตอน Supabase Dashboard (Redirect URLs) ให้ผู้ใช้
-- [ ] ยังไม่ได้ทำ Checklist ทดสอบท้ายสุดตามสเปค deliverable ข้อ 7
+## Phase 3 — รายรับ-รายจ่าย + หมวดหมู่ (เสร็จแล้ว, push แล้ว)
+- ไม่แก้ schema/RLS เดิมเลย ใช้ categories/transactions จาก Phase 1
+- หน้า /transactions: สรุปยอดรวม 3 ช่อง (รายรับ/รายจ่าย/กำไรสุทธิ), filter ทั้งหมด/รายรับ/รายจ่าย
+- Dialog เพิ่ม/แก้ไขรายการ + Dialog จัดการหมวดหมู่ (เพิ่ม/ลบ)
+- ปุ่มลอย + มุมขวาล่างสำหรับเพิ่มรายการ
+- build ผ่านแล้ว ไม่มี TS error, push ขึ้น GitHub แล้ว (commit d580fd4)
+
+## ที่ยังไม่ทำ (ค้างจาก Phase 2)
+- [ ] ยังไม่ได้แจ้ง/ยืนยัน Environment Variables บน Vercel ว่าตั้งครบ (ดูเหมือนใช้งานได้แล้วจากที่ผู้ใช้ทดสอบ login ผ่าน)
+- [ ] Checklist ทดสอบเต็มของ Phase 2 อาจยังไม่ได้ไล่ครบทุกข้อ (ผู้ใช้ยืนยันแค่ login ผ่าน)
+
+## Phase ถัดไปที่น่าจะตามมา
+- Reports (`/reports`) — สรุปรายเดือน/กราฟ ยังไม่ได้เริ่ม
 
 ## บริบทผู้ใช้ (สำคัญ)
 - ใช้ iPhone เครื่องเดียว ไม่มีคอมพิวเตอร์ ทำงานคนเดียว
