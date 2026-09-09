@@ -6,13 +6,20 @@ export function toThaiAuthError(message: string | undefined): string {
   const m = (message ?? "").toLowerCase();
 
   if (m.includes("invalid login credentials")) {
-    return "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+    return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
   }
   if (m.includes("email not confirmed")) {
     return "กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ ตรวจสอบกล่องจดหมายของคุณ";
   }
   if (m.includes("user already registered") || m.includes("already registered")) {
     return "อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบแทน";
+  }
+  if (
+    m.includes("profiles_username") ||
+    m.includes("duplicate key") ||
+    m.includes("database error saving new user")
+  ) {
+    return "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาเลือกชื่อผู้ใช้อื่น";
   }
   if (m.includes("password should be at least")) {
     return "รหัสผ่านสั้นเกินไป ต้องมีอย่างน้อย 8 ตัว";

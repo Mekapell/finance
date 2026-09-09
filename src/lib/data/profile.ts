@@ -3,12 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type ProfileWithShop = {
   id: string;
   email: string;
+  username: string;
   shopName: string;
   shopId: string;
   ownerName: string | null;
   phone: string | null;
   avatarUrl: string | null;
   currency: string;
+  isAdmin: boolean;
 };
 
 /**
@@ -27,7 +29,7 @@ export async function getCurrentProfileWithShop(
   const [{ data: profile }, { data: shop }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("owner_name, phone, avatar_url, currency")
+      .select("username, owner_name, phone, avatar_url, currency, is_admin")
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -40,11 +42,13 @@ export async function getCurrentProfileWithShop(
   return {
     id: user.id,
     email: user.email ?? "",
+    username: profile?.username ?? "",
     shopName: shop?.name ?? "ร้านของฉัน",
     shopId: shop?.id ?? "",
     ownerName: profile?.owner_name ?? null,
     phone: profile?.phone ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     currency: profile?.currency ?? "THB",
+    isAdmin: profile?.is_admin ?? false,
   };
 }

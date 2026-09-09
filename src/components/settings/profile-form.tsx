@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toThaiAuthError } from "@/lib/auth-errors";
-import { profileSchema, type ProfileInput } from "@/lib/validations/profile";
+import { profileSchema, usernameFieldSchema, type ProfileInput } from "@/lib/validations/profile";
 import type { ProfileWithShop } from "@/lib/data/profile";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
@@ -25,19 +25,54 @@ export function ProfileForm({ profile }: { profile: ProfileWithShop }) {
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(
     profile.avatarUrl
   );
+  const [usernameStatus, setUsernameStatus] = React.useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle");
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProfileInput>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      username: profile.username,
       shopName: profile.shopName,
       ownerName: profile.ownerName ?? "",
       phone: profile.phone ?? "",
     },
   });
+
+  const usernameValue = watch("username");
+
+  // เช็คว่า username ว่างอยู่ไหม เฉพาะตอนที่เปลี่ยนจากของเดิม
+  React.useEffect(() => {
+    if (usernameValue === profile.username) {
+      setUsernameStatus("idle");
+      return;
+    }
+    const parsed = usernameFieldSchema.safeParse(usernameValue);
+    if (!parsed.success) {
+      setUsernameStatus("invalid");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("is_username_available", {
+        p_username: parsed.data,
+      });
+      if (error) {
+        setUsernameStatus("idle");
+        return;
+      }
+      setUsernameStatus(data ? "available" : "taken");
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [usernameValue, profile.username]);
 
   const initial = (profile.ownerName || profile.shopName || "?")
     .trim()
@@ -62,6 +97,11 @@ export function ProfileForm({ profile }: { profile: ProfileWithShop }) {
   }
 
   async function onSubmit(values: ProfileInput) {
+    if (usernameStatus === "taken") {
+      toast.error("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาเลือกชื่อผู้ใช้อื่น");
+      return;
+    }
+
     const supabase = createClient();
     let avatarUrl = profile.avatarUrl;
 
@@ -92,6 +132,7 @@ export function ProfileForm({ profile }: { profile: ProfileWithShop }) {
         supabase
           .from("profiles")
           .update({
+            username: values.username,
             owner_name: values.ownerName || null,
             phone: values.phone || null,
             avatar_url: avatarUrl,
@@ -132,6 +173,23 @@ export function ProfileForm({ profile }: { profile: ProfileWithShop }) {
                 onChange={handleAvatarChange}
               />
             </label>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="username">ชื่อผู้ใช้ (สำหรับเข้าสู่ระบบ)</Label>
+            <Input id="username" autoComplete="username" {...register("username")} />
+            {errors.username && (
+              <p className="text-sm text-destructive">{errors.username.message}</p>
+            )}
+            {!errors.username && usernameStatus === "checking" && (
+              <p className="text-xs text-muted-foreground">กำลังตรวจสอบ...</p>
+            )}
+            {!errors.username && usernameStatus === "available" && (
+              <p className="text-xs text-success">ใช้ชื่อนี้ได้</p>
+            )}
+            {!errors.username && usernameStatus === "taken" && (
+              <p className="text-xs text-destructive">ชื่อผู้ใช้นี้ถูกใช้งานแล้ว</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

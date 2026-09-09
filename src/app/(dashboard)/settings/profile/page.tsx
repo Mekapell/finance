@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ShieldCheck } from "lucide-react";
 
 import { ProfileForm } from "@/components/settings/profile-form";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +24,16 @@ export default async function ProfileSettingsPage() {
       </div>
 
       <ProfileForm profile={profile} />
+
+      {profile.isAdmin && (
+        <Link
+          href="/settings/admin"
+          className="flex max-w-lg items-center gap-3 rounded-2xl border border-input p-4 text-sm font-medium hover:bg-accent"
+        >
+          <ShieldCheck className="size-5 text-primary" />
+          แผงควบคุมแอดมิน — รีเซ็ตรหัสผ่านลูกค้า
+        </Link>
+      )}
     </div>
   );
 }

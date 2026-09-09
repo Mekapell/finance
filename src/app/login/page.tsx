@@ -37,8 +37,19 @@ function LoginForm() {
     try {
       const supabase = createClient();
 
+      // หา email จาก username ก่อน (ต้องหาก่อนจะยืนยันตัวตนได้ เพราะ Supabase Auth ล็อกอินด้วย email เท่านั้น)
+      const { data: email, error: lookupError } = await supabase.rpc(
+        "get_email_by_username",
+        { p_username: values.username }
+      );
+
+      if (lookupError || !email) {
+        setFormError("ไม่พบชื่อผู้ใช้นี้ในระบบ");
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: values.email,
+        email,
         password: values.password,
       });
 
@@ -67,16 +78,15 @@ function LoginForm() {
         )}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="email">อีเมล</Label>
+          <Label htmlFor="username">ชื่อผู้ใช้</Label>
           <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            {...register("email")}
+            id="username"
+            placeholder="ชื่อผู้ใช้ของคุณ"
+            autoComplete="username"
+            {...register("username")}
           />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
+          {errors.username && (
+            <p className="text-sm text-destructive">{errors.username.message}</p>
           )}
         </div>
 

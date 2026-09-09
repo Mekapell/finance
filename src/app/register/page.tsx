@@ -14,27 +14,62 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toThaiAuthError } from "@/lib/auth-errors";
-import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
+import { registerSchema, usernameSchema, type RegisterInput } from "@/lib/validations/auth";
 
 export default function RegisterPage() {
   const [submitted, setSubmitted] = React.useState(false);
+  const [usernameStatus, setUsernameStatus] = React.useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle");
 
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
   });
 
+  const usernameValue = watch("username");
+
+  // เช็คว่า username ว่างอยู่ไหมแบบ debounce ระหว่างพิมพ์
+  React.useEffect(() => {
+    const parsed = usernameSchema.safeParse(usernameValue);
+    if (!parsed.success) {
+      setUsernameStatus(usernameValue ? "invalid" : "idle");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("is_username_available", {
+        p_username: parsed.data,
+      });
+      if (error) {
+        setUsernameStatus("idle");
+        return;
+      }
+      setUsernameStatus(data ? "available" : "taken");
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [usernameValue]);
+
   async function onSubmit(values: RegisterInput) {
+    if (usernameStatus === "taken") {
+      toast.error("ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาเลือกชื่อผู้ใช้อื่น");
+      return;
+    }
+
     const supabase = createClient();
 
     const { error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
       options: {
-        data: { shop_name: values.shopName },
+        data: { username: values.username, shop_name: values.shopName },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
       },
     });
@@ -69,6 +104,28 @@ export default function RegisterPage() {
     <AuthCard title="สมัครสมาชิก" description="เริ่มจัดการการเงินร้านค้าของคุณ">
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-1.5">
+          <Label htmlFor="username">ชื่อผู้ใช้ (สำหรับเข้าสู่ระบบ)</Label>
+          <Input
+            id="username"
+            placeholder="เช่น shopowner1"
+            autoComplete="username"
+            {...register("username")}
+          />
+          {errors.username && (
+            <p className="text-sm text-destructive">{errors.username.message}</p>
+          )}
+          {!errors.username && usernameStatus === "checking" && (
+            <p className="text-xs text-muted-foreground">กำลังตรวจสอบ...</p>
+          )}
+          {!errors.username && usernameStatus === "available" && (
+            <p className="text-xs text-success">ใช้ชื่อนี้ได้</p>
+          )}
+          {!errors.username && usernameStatus === "taken" && (
+            <p className="text-xs text-destructive">ชื่อผู้ใช้นี้ถูกใช้งานแล้ว</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="shopName">ชื่อร้าน</Label>
           <Input
             id="shopName"
@@ -92,6 +149,9 @@ export default function RegisterPage() {
           {errors.email && (
             <p className="text-sm text-destructive">{errors.email.message}</p>
           )}
+          <p className="text-xs text-muted-foreground">
+            ใช้สำหรับกู้รหัสผ่านเท่านั้น ไม่ได้ใช้ตอนเข้าสู่ระบบ
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">
