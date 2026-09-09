@@ -44,8 +44,18 @@ export function TransactionFormDialog({
   const [receiptFile, setReceiptFile] = React.useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
   const [removeReceipt, setRemoveReceipt] = React.useState(false);
+  const [scanning, setScanning] = React.useState(false);
 
   const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5MB
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
 
   function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -63,6 +73,7 @@ export function TransactionFormDialog({
     setReceiptFile(file);
     setReceiptPreview(URL.createObjectURL(file));
     setRemoveReceipt(false);
+    scanReceipt(file);
   }
 
   const {
@@ -78,6 +89,60 @@ export function TransactionFormDialog({
   });
 
   const type = watch("type");
+
+  async function scanReceipt(file: File) {
+    setScanning(true);
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await fetch("/api/scan-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: base64, mimeType: file.type }),
+      });
+      const json = await res.json();
+
+      if (!json.result) {
+        toast.error(json.error ?? "สแกนใบเสร็จไม่สำเร็จ กรุณากรอกเอง");
+        return;
+      }
+
+      const result = json.result as {
+        amount?: number;
+        type?: "income" | "expense";
+        date?: string;
+        category?: string;
+        note?: string;
+      };
+
+      const resultType = result.type === "income" ? "income" : "expense";
+      setValue("type", resultType);
+      if (typeof result.amount === "number") setValue("amount", result.amount);
+      if (result.date) setValue("occurredAt", result.date);
+
+      let noteValue = result.note ?? "";
+      if (result.category) {
+        const match = categories.find(
+          (c) =>
+            c.type === resultType &&
+            (c.name.includes(result.category!) || result.category!.includes(c.name))
+        );
+        if (match) {
+          setValue("categoryId", match.id);
+        } else {
+          noteValue = noteValue
+            ? `${noteValue} (แนะนำหมวดหมู่: ${result.category})`
+            : `แนะนำหมวดหมู่: ${result.category}`;
+        }
+      }
+      setValue("note", noteValue);
+
+      toast.success("สแกนใบเสร็จสำเร็จ ตรวจสอบข้อมูลก่อนบันทึกด้วยนะ");
+    } catch {
+      toast.error("สแกนใบเสร็จไม่สำเร็จ กรุณากรอกเอง");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   React.useEffect(() => {
     if (open) {
@@ -255,6 +320,10 @@ export function TransactionFormDialog({
 
           <div className="flex flex-col gap-1.5">
             <Label>รูปใบเสร็จ (ไม่บังคับ)</Label>
+            <p className="text-xs text-muted-foreground">
+              ถ่ายรูปหรือแนบรูปใบเสร็จ แล้ว AI จะช่วยกรอกจำนวนเงิน/วันที่/หมวดหมู่ให้อัตโนมัติ
+              (ตรวจสอบความถูกต้องก่อนกดบันทึกทุกครั้ง)
+            </p>
             {receiptPreview ? (
               <div className="relative w-fit">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -263,6 +332,12 @@ export function TransactionFormDialog({
                   alt="ใบเสร็จ"
                   className="h-28 w-28 rounded-xl border border-border object-cover"
                 />
+                {scanning && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-black/60 text-white">
+                    <Loader2 className="size-5 animate-spin" />
+                    <span className="text-xs">กำลังอ่าน...</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -270,7 +345,8 @@ export function TransactionFormDialog({
                     setReceiptPreview(null);
                     setRemoveReceipt(true);
                   }}
-                  className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                  disabled={scanning}
+                  className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow disabled:opacity-50"
                   aria-label="ลบรูป"
                 >
                   <X className="size-3.5" />
@@ -292,7 +368,7 @@ export function TransactionFormDialog({
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || scanning}>
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
               บันทึก
             </Button>
