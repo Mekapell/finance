@@ -66,29 +66,42 @@ export function TransactionFormDialog({
   }
 
   function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = ""; // กันเลือกไฟล์เดิมซ้ำแล้ว onChange ไม่ทำงาน
-    if (!file) return;
+    if (files.length === 0) return;
 
-    if (totalCount >= MAX_RECEIPTS) {
+    const remainingSlots = MAX_RECEIPTS - totalCount;
+    if (remainingSlots <= 0) {
       toast.error(`แนบรูปได้สูงสุด ${MAX_RECEIPTS} รูปต่อรายการ`);
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
-      return;
-    }
-    if (file.size > MAX_RECEIPT_BYTES) {
-      toast.error("ไฟล์รูปใหญ่เกินไป (สูงสุด 5MB)");
-      return;
+
+    const wasEmpty = totalCount === 0;
+    const accepted: { file: File; preview: string }[] = [];
+
+    for (const file of files) {
+      if (accepted.length >= remainingSlots) {
+        toast.error(`แนบรูปได้สูงสุด ${MAX_RECEIPTS} รูปต่อรายการ เลือกมาบางรูปถูกข้าม`);
+        break;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error(`ข้ามไฟล์ที่ไม่ใช่รูปภาพ: ${file.name}`);
+        continue;
+      }
+      if (file.size > MAX_RECEIPT_BYTES) {
+        toast.error(`ไฟล์ "${file.name}" ใหญ่เกินไป (สูงสุด 5MB) ข้ามไป`);
+        continue;
+      }
+      accepted.push({ file, preview: URL.createObjectURL(file) });
     }
 
-    const isFirstPhoto = totalCount === 0;
-    setNewFiles((prev) => [...prev, { file, preview: URL.createObjectURL(file) }]);
+    if (accepted.length === 0) return;
 
-    // สแกนด้วย AI เฉพาะรูปแรกที่แนบเท่านั้น กันเขียนทับค่าที่ผู้ใช้แก้ไว้แล้วตอนแนบรูปเพิ่ม
-    if (isFirstPhoto) {
-      scanReceipt(file);
+    setNewFiles((prev) => [...prev, ...accepted]);
+
+    // สแกนด้วย AI เฉพาะรูปแรกของรายการนี้เท่านั้น กันเขียนทับค่าที่ผู้ใช้แก้ไว้แล้ว
+    if (wasEmpty) {
+      scanReceipt(accepted[0].file);
     }
   }
 
@@ -416,7 +429,7 @@ export function TransactionFormDialog({
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    multiple
                     className="hidden"
                     onChange={handleReceiptChange}
                   />
