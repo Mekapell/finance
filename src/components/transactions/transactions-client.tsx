@@ -159,17 +159,26 @@ export function TransactionsClient({
             }}
           >
             <div className="flex min-w-0 items-center gap-3">
-              {t.receipt_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={t.receipt_url}
-                  alt="ใบเสร็จ"
-                  className="size-10 shrink-0 rounded-lg border border-border object-cover"
+              {t.receipts.length > 0 && (
+                <div
+                  className="relative shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.open(t.receipt_url!, "_blank");
+                    window.open(t.receipts[0].url, "_blank");
                   }}
-                />
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={t.receipts[0].url}
+                    alt="ใบเสร็จ"
+                    className="size-10 rounded-lg border border-border object-cover"
+                  />
+                  {t.receipts.length > 1 && (
+                    <span className="absolute -right-1.5 -top-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                      {t.receipts.length}
+                    </span>
+                  )}
+                </div>
               )}
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">

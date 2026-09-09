@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { data } = await supabase
     .from("transactions")
-    .select("id, type, amount, note, occurred_at, category_id, receipt_url, category:categories(id, name, type)")
+    .select("id, type, amount, note, occurred_at, category_id, category:categories(id, name, type), receipts:transaction_receipts(id, url)")
     .eq("shop_id", profile.shopId)
     .gte("occurred_at", fromDate)
     .order("occurred_at", { ascending: false });

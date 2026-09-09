@@ -24,6 +24,13 @@ import {
 } from "@/lib/validations/transaction";
 import type { Category, Transaction } from "@/lib/types/finance";
 
+const MAX_RECEIPTS = 5;
+const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5MB
+const TRANSACTION_SELECT =
+  "id, type, amount, note, occurred_at, category_id, category:categories(id, name, type), receipts:transaction_receipts(id, url)";
+
+type ExistingReceipt = { id: string; url: string };
+
 export function TransactionFormDialog({
   open,
   onOpenChange,
@@ -41,12 +48,13 @@ export function TransactionFormDialog({
   editing: Transaction | null;
   onSaved: (transaction: Transaction) => void;
 }) {
-  const [receiptFile, setReceiptFile] = React.useState<File | null>(null);
-  const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
-  const [removeReceipt, setRemoveReceipt] = React.useState(false);
+  const [existingReceipts, setExistingReceipts] = React.useState<ExistingReceipt[]>([]);
+  const [removedIds, setRemovedIds] = React.useState<string[]>([]);
+  const [newFiles, setNewFiles] = React.useState<{ file: File; preview: string }[]>([]);
   const [scanning, setScanning] = React.useState(false);
 
-  const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5MB
+  const keptExisting = existingReceipts.filter((r) => !removedIds.includes(r.id));
+  const totalCount = keptExisting.length + newFiles.length;
 
   function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -59,8 +67,13 @@ export function TransactionFormDialog({
 
   function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = ""; // กันเลือกไฟล์เดิมซ้ำแล้ว onChange ไม่ทำงาน
     if (!file) return;
 
+    if (totalCount >= MAX_RECEIPTS) {
+      toast.error(`แนบรูปได้สูงสุด ${MAX_RECEIPTS} รูปต่อรายการ`);
+      return;
+    }
     if (!file.type.startsWith("image/")) {
       toast.error("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
       return;
@@ -70,10 +83,21 @@ export function TransactionFormDialog({
       return;
     }
 
-    setReceiptFile(file);
-    setReceiptPreview(URL.createObjectURL(file));
-    setRemoveReceipt(false);
-    scanReceipt(file);
+    const isFirstPhoto = totalCount === 0;
+    setNewFiles((prev) => [...prev, { file, preview: URL.createObjectURL(file) }]);
+
+    // สแกนด้วย AI เฉพาะรูปแรกที่แนบเท่านั้น กันเขียนทับค่าที่ผู้ใช้แก้ไว้แล้วตอนแนบรูปเพิ่ม
+    if (isFirstPhoto) {
+      scanReceipt(file);
+    }
+  }
+
+  function removeNewFile(index: number) {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function removeExisting(id: string) {
+    setRemovedIds((prev) => [...prev, id]);
   }
 
   const {
@@ -163,9 +187,9 @@ export function TransactionFormDialog({
               note: "",
             }
       );
-      setReceiptFile(null);
-      setReceiptPreview(editing?.receipt_url ?? null);
-      setRemoveReceipt(false);
+      setExistingReceipts(editing?.receipts ?? []);
+      setRemovedIds([]);
+      setNewFiles([]);
     }
   }, [open, editing, reset]);
 
@@ -173,30 +197,6 @@ export function TransactionFormDialog({
 
   async function onSubmit(values: TransactionInput) {
     const supabase = createClient();
-    let receiptUrl = editing?.receipt_url ?? null;
-
-    if (removeReceipt) {
-      receiptUrl = null;
-    }
-
-    if (receiptFile) {
-      const ext = receiptFile.name.split(".").pop() || "jpg";
-      const path = `${userId}/${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("receipts")
-        .upload(path, receiptFile);
-
-      if (uploadError) {
-        toast.error("อัปโหลดรูปไม่สำเร็จ");
-        return;
-      }
-
-      const { data: publicUrlData } = supabase.storage
-        .from("receipts")
-        .getPublicUrl(path);
-      receiptUrl = publicUrlData.publicUrl;
-    }
 
     const payload = {
       shop_id: shopId,
@@ -205,23 +205,61 @@ export function TransactionFormDialog({
       category_id: values.categoryId,
       occurred_at: values.occurredAt,
       note: values.note?.trim() || null,
-      receipt_url: receiptUrl,
     };
 
     const query = editing
       ? supabase.from("transactions").update(payload).eq("id", editing.id)
       : supabase.from("transactions").insert(payload);
 
-    const { data, error } = await query
-      .select("id, type, amount, note, occurred_at, category_id, receipt_url, category:categories(id, name, type)")
-      .single();
+    const { data: savedTransaction, error } = await query.select("id").single();
 
-    if (error || !data) {
+    if (error || !savedTransaction) {
       toast.error("บันทึกรายการไม่สำเร็จ กรุณาลองใหม่");
       return;
     }
 
-    onSaved(data as never);
+    const transactionId = savedTransaction.id as string;
+
+    // ลบรูปที่ผู้ใช้เอาออก
+    if (removedIds.length > 0) {
+      await supabase.from("transaction_receipts").delete().in("id", removedIds);
+    }
+
+    // อัปโหลดรูปใหม่ที่เพิ่มเข้ามา แล้วบันทึก path ลงตาราง
+    for (let i = 0; i < newFiles.length; i++) {
+      const { file } = newFiles[i];
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${userId}/${Date.now()}-${i}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(path, file);
+
+      if (uploadError) {
+        toast.error("อัปโหลดรูปบางรูปไม่สำเร็จ");
+        continue;
+      }
+
+      const { data: publicUrlData } = supabase.storage.from("receipts").getPublicUrl(path);
+
+      await supabase
+        .from("transaction_receipts")
+        .insert({ transaction_id: transactionId, url: publicUrlData.publicUrl });
+    }
+
+    const { data: full } = await supabase
+      .from("transactions")
+      .select(TRANSACTION_SELECT)
+      .eq("id", transactionId)
+      .single();
+
+    if (!full) {
+      toast.error("บันทึกสำเร็จ แต่โหลดข้อมูลล่าสุดไม่สำเร็จ กรุณารีเฟรชหน้า");
+      onOpenChange(false);
+      return;
+    }
+
+    onSaved(full as never);
     onOpenChange(false);
   }
 
@@ -319,52 +357,72 @@ export function TransactionFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>รูปใบเสร็จ (ไม่บังคับ)</Label>
+            <Label>รูปใบเสร็จ (สูงสุด {MAX_RECEIPTS} รูป)</Label>
             <p className="text-xs text-muted-foreground">
-              ถ่ายรูปหรือแนบรูปใบเสร็จ แล้ว AI จะช่วยกรอกจำนวนเงิน/วันที่/หมวดหมู่ให้อัตโนมัติ
+              รูปแรกที่แนบ AI จะช่วยกรอกจำนวนเงิน/วันที่/หมวดหมู่ให้อัตโนมัติ
               (ตรวจสอบความถูกต้องก่อนกดบันทึกทุกครั้ง)
             </p>
-            {receiptPreview ? (
-              <div className="relative w-fit">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={receiptPreview}
-                  alt="ใบเสร็จ"
-                  className="h-28 w-28 rounded-xl border border-border object-cover"
-                />
-                {scanning && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-black/60 text-white">
-                    <Loader2 className="size-5 animate-spin" />
-                    <span className="text-xs">กำลังอ่าน...</span>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReceiptFile(null);
-                    setReceiptPreview(null);
-                    setRemoveReceipt(true);
-                  }}
-                  disabled={scanning}
-                  className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow disabled:opacity-50"
-                  aria-label="ลบรูป"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-input px-4 py-2.5 text-sm font-medium hover:bg-accent">
-                <Camera className="size-4" />
-                ถ่ายภาพ / แนบรูป
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleReceiptChange}
-                />
-              </label>
-            )}
+
+            <div className="flex flex-wrap gap-2">
+              {keptExisting.map((r) => (
+                <div key={r.id} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={r.url}
+                    alt="ใบเสร็จ"
+                    className="size-20 rounded-xl border border-border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExisting(r.id)}
+                    className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow"
+                    aria-label="ลบรูป"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              {newFiles.map((f, i) => (
+                <div key={f.preview} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={f.preview}
+                    alt="ใบเสร็จ"
+                    className="size-20 rounded-xl border border-border object-cover"
+                  />
+                  {scanning && i === 0 && keptExisting.length === 0 && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-black/60 text-white">
+                      <Loader2 className="size-4 animate-spin" />
+                      <span className="text-[10px]">กำลังอ่าน...</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeNewFile(i)}
+                    disabled={scanning}
+                    className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-destructive text-white shadow disabled:opacity-50"
+                    aria-label="ลบรูป"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+
+              {totalCount < MAX_RECEIPTS && (
+                <label className="flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-input text-muted-foreground hover:bg-accent">
+                  <Camera className="size-5" />
+                  <span className="text-[10px]">เพิ่มรูป</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleReceiptChange}
+                  />
+                </label>
+              )}
+            </div>
           </div>
 
           <DialogFooter>

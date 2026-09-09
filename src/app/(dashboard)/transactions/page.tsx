@@ -33,7 +33,7 @@ export default async function TransactionsPage() {
       .order("name"),
     supabase
       .from("transactions")
-      .select("id, type, amount, note, occurred_at, category_id, receipt_url, category:categories(id, name, type)")
+      .select("id, type, amount, note, occurred_at, category_id, category:categories(id, name, type), receipts:transaction_receipts(id, url)")
       .eq("shop_id", shop.id)
       .order("occurred_at", { ascending: false })
       .limit(200),
