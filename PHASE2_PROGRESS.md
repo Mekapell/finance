@@ -71,3 +71,13 @@
 ## Bug fix เพิ่มเติม (หลัง Phase 6)
 - แชท AI (Gemini) ผ่าน Google AI Studio — เพิ่มแล้ว, รอผู้ใช้ตั้ง GEMINI_API_KEY ใน Vercel เอง
 - แก้ MIDDLEWARE_INVOCATION_FAILED: middleware ไม่มี try/catch รอบ supabase.auth.getUser() ถ้าเน็ต/Supabase สะดุดชั่วคราวจะทำทั้งเว็บพัง (500) — แก้แล้ว fail-open + เช็ค env var ก่อนสร้าง client
+
+## อัปเดตล่าสุด: แนบรูปใบเสร็จได้หลายรูป (สูงสุด 5 รูป/รายการ)
+- DB: ตารางใหม่ `transaction_receipts` (id, transaction_id, url, created_at) แทนคอลัมน์ receipt_url เดี่ยวเดิม
+  - RLS: อิงความเป็นเจ้าของผ่าน transactions -> shops -> owner_id
+  - Migration ย้ายข้อมูล receipt_url เก่า (ถ้ามี) เข้าตารางใหม่ให้อัตโนมัติแล้ว
+- ฟอร์มเพิ่ม/แก้ไขรายการ: แนบรูปได้สูงสุด 5 รูป, ลบทีละรูปได้ทั้งรูปเดิม/รูปใหม่
+- AI สแกน (Gemini) ทำงานอัตโนมัติเฉพาะรูปแรกที่แนบเท่านั้น (รูปถัดไปแนบเฉยๆ ไม่สแกนซ้ำ กันเขียนทับข้อมูลที่แก้แล้ว)
+- หน้ารายการแสดงรูปแรกเป็น thumbnail + ตัวเลขจำนวนรูปถ้ามากกว่า 1
+- อัปเดต query ทุกหน้าที่ดึงรายการ (transactions/reports/dashboard) ให้ join รูปทั้งหมดมาด้วย
+- STATUS: build ผ่าน, push แล้ว (commit 8fe4e50), ยังไม่ได้ทดสอบจริงกับผู้ใช้
