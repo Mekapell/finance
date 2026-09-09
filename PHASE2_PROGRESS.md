@@ -81,3 +81,14 @@
 - หน้ารายการแสดงรูปแรกเป็น thumbnail + ตัวเลขจำนวนรูปถ้ามากกว่า 1
 - อัปเดต query ทุกหน้าที่ดึงรายการ (transactions/reports/dashboard) ให้ join รูปทั้งหมดมาด้วย
 - STATUS: build ผ่าน, push แล้ว (commit 8fe4e50), ยังไม่ได้ทดสอบจริงกับผู้ใช้
+
+## อัปเดตล่าสุด: เข้าสู่ระบบด้วย Username + แผงควบคุมแอดมินรีเซ็ตรหัสผ่านลูกค้า
+- DB: profiles.username (unique), profiles.is_admin + ฟังก์ชัน is_username_available / get_email_by_username
+- สมัครสมาชิก: มีช่อง username, เช็คซ้ำ real-time
+- ล็อกอิน: ใช้ username แทนอีเมล (ยัง fallback หา email จาก username ก่อน sign in)
+- /settings/admin: ค้นหาลูกค้าด้วย username -> ตั้งรหัสผ่านใหม่ให้ได้ (ใช้ service_role key ฝั่งเซิร์ฟเวอร์เท่านั้น)
+- STATUS: build ผ่าน, push แล้ว (commit beace61)
+- ค้างที่ผู้ใช้ต้องทำเอง (ทำผ่านโค้ดไม่ได้):
+  1. Supabase Dashboard -> Authentication -> Providers -> Email -> ปิด "Confirm email"
+  2. Vercel -> financial9mek -> Settings -> Environment Variables -> เพิ่ม SUPABASE_SERVICE_ROLE_KEY (จาก Supabase Dashboard -> Project Settings -> API -> service_role key) แล้ว redeploy
+  3. ตั้ง is_admin = true ให้บัญชีของ Mekapell เอง (รอ username/อีเมลจากผู้ใช้เพื่อรัน SQL ให้)
