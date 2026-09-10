@@ -341,12 +341,7 @@ export function TransactionFormDialog({
                 onChange: (e) => {
                   const selected = categories.find((c) => c.id === e.target.value);
                   const currentAmount = getValues("amount");
-                  if (
-                    selected?.default_amount != null &&
-                    (currentAmount === undefined ||
-                      currentAmount === null ||
-                      Number.isNaN(currentAmount))
-                  ) {
+                  if (selected?.default_amount != null && !currentAmount) {
                     setValue("amount", selected.default_amount);
                   }
                 },
