@@ -11,6 +11,8 @@ import {
 } from "recharts";
 
 import { formatDateTH, formatTHB } from "@/lib/utils";
+import { getCategoryAccent } from "@/lib/category-colors";
+import { ShopMascot } from "@/components/dashboard/shop-mascot";
 import type { Transaction } from "@/lib/types/finance";
 
 type ChartPoint = { label: string; income: number; expense: number };
@@ -34,13 +36,16 @@ export function DashboardClient({
     <div className="pv-theme -m-4 flex min-h-[calc(100dvh-4rem)] flex-col gap-8 rounded-none p-5 pb-28 md:-m-6 md:min-h-[calc(100dvh-4.5rem)] md:rounded-3xl md:p-9 md:pb-9">
       {/* หัวเรื่อง */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-[var(--pv-ink-faint)]">
-            สวัสดี{ownerName ? ` ${ownerName}` : ""}
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-[var(--pv-ink)]">
-            {shopName}
-          </h1>
+        <div className="flex items-center gap-3">
+          <ShopMascot className="size-14 shrink-0 md:size-16" />
+          <div>
+            <p className="text-sm text-[var(--pv-ink-faint)]">
+              สวัสดี{ownerName ? ` ${ownerName}` : ""} 👋
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-[var(--pv-ink)]">
+              {shopName}
+            </h1>
+          </div>
         </div>
         <Link
           href="/transactions?add=1"
@@ -153,30 +158,41 @@ export function DashboardClient({
           </div>
         ) : (
           <div className="flex flex-col">
-            {recent.map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between border-b border-[var(--pv-hairline)] py-3.5 last:border-0"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[var(--pv-ink)]">
-                    {t.category?.name ?? "ไม่มีหมวดหมู่"}
-                  </p>
-                  <p className="text-xs text-[var(--pv-ink-faint)]">
-                    {formatDateTH(t.occurred_at)}
-                  </p>
-                </div>
-                <span
-                  className="whitespace-nowrap text-sm font-semibold"
-                  style={{
-                    color: t.type === "income" ? "var(--pv-income)" : "var(--pv-expense)",
-                  }}
+            {recent.map((t) => {
+              const accent = getCategoryAccent(t.category?.name ?? "ไม่มีหมวดหมู่");
+              return (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between border-b border-[var(--pv-hairline)] py-3.5 last:border-0"
                 >
-                  {t.type === "income" ? "+" : "-"}
-                  {formatTHB(t.amount)}
-                </span>
-              </div>
-            ))}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                      style={{ background: accent.bg, color: accent.fg }}
+                    >
+                      {(t.category?.name ?? "ไม่มีหมวดหมู่").charAt(0)}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--pv-ink)]">
+                        {t.category?.name ?? "ไม่มีหมวดหมู่"}
+                      </p>
+                      <p className="text-xs text-[var(--pv-ink-faint)]">
+                        {formatDateTH(t.occurred_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className="whitespace-nowrap text-sm font-semibold"
+                    style={{
+                      color: t.type === "income" ? "var(--pv-income)" : "var(--pv-expense)",
+                    }}
+                  >
+                    {t.type === "income" ? "+" : "-"}
+                    {formatTHB(t.amount)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

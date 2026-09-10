@@ -6,12 +6,12 @@ import { Plus, Settings2, Trash2, Receipt } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CategoryManagerDialog } from "@/components/transactions/category-manager-dialog";
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { cn, formatDateTH, formatTHB } from "@/lib/utils";
+import { getCategoryAccent } from "@/lib/category-colors";
 import type { Category, Transaction, TransactionType } from "@/lib/types/finance";
 
 type Filter = "all" | TransactionType;
@@ -84,38 +84,49 @@ export function TransactionsClient({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="pv-theme -m-4 flex min-h-[calc(100dvh-4rem)] flex-col gap-6 rounded-none p-5 pb-28 md:-m-6 md:min-h-[calc(100dvh-4.5rem)] md:rounded-3xl md:p-9 md:pb-9">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">รายรับ–รายจ่าย</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-[var(--pv-ink)]">
+          รายรับ–รายจ่าย
+        </h1>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setCategoryDialogOpen(true)}
+          className="border-[var(--pv-hairline)] bg-transparent text-[var(--pv-ink-dim)] hover:bg-[var(--pv-surface)]"
         >
           <Settings2 className="size-4" />
           หมวดหมู่
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground">รายรับ</p>
-          <p className="mt-1 truncate text-lg font-semibold text-success">
-            {formatTHB(totals.income)}
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground">รายจ่าย</p>
-          <p className="mt-1 truncate text-lg font-semibold text-destructive">
-            {formatTHB(totals.expense)}
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-xs text-muted-foreground">กำไรสุทธิ</p>
-          <p className="mt-1 truncate text-lg font-semibold">
-            {formatTHB(totals.net)}
-          </p>
-        </Card>
+      <div className="rounded-[24px] bg-[var(--pv-surface-raised)] p-5">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <p className="text-xs text-[var(--pv-ink-faint)]">รายรับ</p>
+            <p
+              className="mt-1 truncate text-base font-semibold"
+              style={{ color: "var(--pv-income)" }}
+            >
+              {formatTHB(totals.income)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--pv-ink-faint)]">รายจ่าย</p>
+            <p
+              className="mt-1 truncate text-base font-semibold"
+              style={{ color: "var(--pv-expense)" }}
+            >
+              {formatTHB(totals.expense)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-[var(--pv-ink-faint)]">กำไรสุทธิ</p>
+            <p className="mt-1 truncate text-base font-semibold text-[var(--pv-ink)]">
+              {formatTHB(totals.net)}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -130,10 +141,10 @@ export function TransactionsClient({
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={cn(
-              "rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
               filter === tab.key
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground"
+                ? "bg-[var(--pv-gold)] text-[var(--pv-bg)]"
+                : "bg-[var(--pv-surface)] text-[var(--pv-ink-dim)]"
             )}
           >
             {tab.label}
@@ -141,7 +152,7 @@ export function TransactionsClient({
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 pb-24">
+      <div className="flex flex-1 flex-col">
         {filtered.length === 0 && (
           <EmptyState
             icon={Receipt}
@@ -149,71 +160,84 @@ export function TransactionsClient({
             description="กดปุ่ม + ด้านล่างเพื่อเพิ่มรายการแรกของคุณ"
           />
         )}
-        {filtered.map((t) => (
-          <Card
-            key={t.id}
-            className="flex cursor-pointer items-center justify-between p-4"
-            onClick={() => {
-              setEditing(t);
-              setFormOpen(true);
-            }}
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              {t.receipts.length > 0 && (
-                <div
-                  className="relative shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(t.receipts[0].url, "_blank");
+        {filtered.map((t) => {
+          const accent = getCategoryAccent(t.category?.name ?? "ไม่มีหมวดหมู่");
+          return (
+            <div
+              key={t.id}
+              className="flex cursor-pointer items-center justify-between border-b border-[var(--pv-hairline)] py-3.5 last:border-0"
+              onClick={() => {
+                setEditing(t);
+                setFormOpen(true);
+              }}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                {t.receipts.length > 0 ? (
+                  <div
+                    className="relative shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(t.receipts[0].url, "_blank");
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={t.receipts[0].url}
+                      alt="ใบเสร็จ"
+                      className="size-10 rounded-full border border-[var(--pv-hairline)] object-cover"
+                    />
+                    {t.receipts.length > 1 && (
+                      <span
+                        className="absolute -right-1.5 -top-1.5 flex size-4.5 items-center justify-center rounded-full text-[10px] font-medium"
+                        style={{ background: "var(--pv-gold)", color: "var(--pv-bg)" }}
+                      >
+                        {t.receipts.length}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                    style={{ background: accent.bg, color: accent.fg }}
+                  >
+                    {(t.category?.name ?? "ไม่มีหมวดหมู่").charAt(0)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[var(--pv-ink)]">
+                    {t.category?.name ?? "ไม่มีหมวดหมู่"}
+                  </p>
+                  <p className="truncate text-xs text-[var(--pv-ink-faint)]">
+                    {formatDateTH(t.occurred_at)}
+                    {t.note ? ` · ${t.note}` : ""}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className="whitespace-nowrap text-sm font-semibold"
+                  style={{
+                    color: t.type === "income" ? "var(--pv-income)" : "var(--pv-expense)",
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={t.receipts[0].url}
-                    alt="ใบเสร็จ"
-                    className="size-10 rounded-lg border border-border object-cover"
-                  />
-                  {t.receipts.length > 1 && (
-                    <span className="absolute -right-1.5 -top-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                      {t.receipts.length}
-                    </span>
-                  )}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
-                  {t.category?.name ?? "ไม่มีหมวดหมู่"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDateTH(t.occurred_at)}
-                  {t.note ? ` · ${t.note}` : ""}
-                </p>
+                  {t.type === "income" ? "+" : "-"}
+                  {formatTHB(t.amount)}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(t.id);
+                  }}
+                  className="text-[var(--pv-ink-faint)] hover:text-[var(--pv-expense)]"
+                  aria-label="ลบรายการ"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "whitespace-nowrap text-sm font-semibold",
-                  t.type === "income" ? "text-success" : "text-destructive"
-                )}
-              >
-                {t.type === "income" ? "+" : "-"}
-                {formatTHB(t.amount)}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(t.id);
-                }}
-                className="text-muted-foreground hover:text-destructive"
-                aria-label="ลบรายการ"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
 
       <button
@@ -222,7 +246,8 @@ export function TransactionsClient({
           setEditing(null);
           setFormOpen(true);
         }}
-        className="fixed bottom-24 right-5 z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:bottom-8"
+        className="fixed bottom-24 right-5 z-30 flex size-14 items-center justify-center rounded-full shadow-lg md:bottom-8"
+        style={{ background: "var(--pv-gold)", color: "var(--pv-bg)" }}
         aria-label="เพิ่มรายการ"
       >
         <Plus className="size-6" />
