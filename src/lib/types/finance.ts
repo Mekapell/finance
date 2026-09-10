@@ -4,6 +4,7 @@ export type Category = {
   id: string;
   name: string;
   type: TransactionType;
+  default_amount: number | null;
 };
 
 export type Transaction = {

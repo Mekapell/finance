@@ -28,7 +28,7 @@ export default async function TransactionsPage() {
   const [{ data: categories }, { data: transactions }] = await Promise.all([
     supabase
       .from("categories")
-      .select("id, name, type")
+      .select("id, name, type, default_amount")
       .eq("shop_id", shop.id)
       .order("name"),
     supabase

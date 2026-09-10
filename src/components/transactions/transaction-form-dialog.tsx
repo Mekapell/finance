@@ -118,6 +118,7 @@ export function TransactionFormDialog({
     handleSubmit,
     watch,
     setValue,
+    getValues,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<TransactionInput>({
@@ -336,13 +337,27 @@ export function TransactionFormDialog({
             <Label htmlFor="categoryId">หมวดหมู่</Label>
             <select
               id="categoryId"
-              {...register("categoryId")}
+              {...register("categoryId", {
+                onChange: (e) => {
+                  const selected = categories.find((c) => c.id === e.target.value);
+                  const currentAmount = getValues("amount");
+                  if (
+                    selected?.default_amount != null &&
+                    (currentAmount === undefined ||
+                      currentAmount === null ||
+                      Number.isNaN(currentAmount))
+                  ) {
+                    setValue("amount", selected.default_amount);
+                  }
+                },
+              })}
               className="h-11 w-full rounded-xl border border-input bg-background px-3.5 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
             >
               <option value="">เลือกหมวดหมู่</option>
               {filteredCategories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
+                  {c.default_amount != null ? ` (฿${c.default_amount})` : ""}
                 </option>
               ))}
             </select>
