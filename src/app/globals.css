@@ -3,65 +3,67 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ===== ธีมเดียวของทั้งเว็บ: กรมท่าอบอุ่น + ทอง (โทนเดิมที่เลือกไว้ ใช้ทั้งเว็บแล้ว) =====
+   ไม่มี light/dark สลับกันอีกต่อไป กันบั๊กสีไม่ตรงกันตอนสลับโหมด
+   ตัวแปร --pv-* ยังคงไว้เผื่อโค้ดหน้า Dashboard/รายการที่อ้างอิงอยู่แล้ว ค่าตรงกับตัวแปรหลักทุกจุด */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0.01 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.01 260);
-  --primary: oklch(0.55 0.18 260);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.01 260);
-  --secondary-foreground: oklch(0.2 0.01 260);
-  --muted: oklch(0.96 0.01 260);
-  --muted-foreground: oklch(0.55 0.02 260);
-  --accent: oklch(0.96 0.01 260);
-  --accent-foreground: oklch(0.2 0.01 260);
-  --destructive: oklch(0.58 0.22 27);
-  --success: oklch(0.6 0.15 150);
-  --border: oklch(0.92 0.01 260);
-  --input: oklch(0.92 0.01 260);
-  --ring: oklch(0.55 0.18 260);
-  --radius: 0.75rem;
-}
-
-.dark {
-  --background: oklch(0.14 0.01 260);
-  --foreground: oklch(0.98 0 0);
-  --card: oklch(0.19 0.01 260);
-  --card-foreground: oklch(0.98 0 0);
-  --primary: oklch(0.65 0.18 260);
-  --primary-foreground: oklch(0.14 0.01 260);
-  --secondary: oklch(0.25 0.01 260);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.25 0.01 260);
-  --muted-foreground: oklch(0.68 0.02 260);
-  --accent: oklch(0.25 0.01 260);
-  --accent-foreground: oklch(0.98 0 0);
-  --destructive: oklch(0.65 0.2 25);
-  --success: oklch(0.68 0.15 150);
-  --border: oklch(1 0 0 / 12%);
+  --background: oklch(0.17 0.02 255);
+  --foreground: oklch(0.97 0.005 255);
+  --card: oklch(0.23 0.02 255);
+  --card-foreground: oklch(0.97 0.005 255);
+  --primary: oklch(0.8 0.13 88);
+  --primary-foreground: oklch(0.17 0.02 255);
+  --secondary: oklch(0.23 0.02 255);
+  --secondary-foreground: oklch(0.97 0.005 255);
+  --muted: oklch(0.2 0.02 255);
+  --muted-foreground: oklch(0.62 0.02 255);
+  --accent: oklch(0.27 0.025 255);
+  --accent-foreground: oklch(0.97 0.005 255);
+  --destructive: oklch(0.7 0.16 26);
+  --success: oklch(0.72 0.13 155);
+  --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.18 260);
-}
+  --ring: oklch(0.8 0.13 88);
+  --radius: 1rem;
 
-/* ===== พรีวิว: ธีมพรีเมียมมืด เฉพาะหน้า Dashboard เท่านั้น =====
-   ไม่แตะ token หลักด้านบน หน้าอื่นๆ ยังหน้าตาเดิมทุกอย่าง
-   ถ้าชอบแล้วค่อยขยายไปหน้าอื่น */
-.pv-theme {
   --pv-bg: oklch(0.17 0.02 255);
   --pv-bg-soft: oklch(0.2 0.02 255);
   --pv-surface: oklch(0.23 0.02 255);
   --pv-surface-raised: oklch(0.27 0.025 255);
   --pv-ink: oklch(0.97 0.005 255);
   --pv-ink-dim: oklch(0.72 0.02 255);
-  --pv-ink-faint: oklch(0.55 0.015 255);
-  --pv-hairline: oklch(1 0 0 / 8%);
+  --pv-ink-faint: oklch(0.62 0.02 255);
+  --pv-hairline: oklch(1 0 0 / 10%);
   --pv-gold: oklch(0.8 0.13 88);
   --pv-gold-dim: oklch(0.8 0.13 88 / 15%);
   --pv-income: oklch(0.72 0.13 155);
   --pv-income-dim: oklch(0.72 0.13 155 / 14%);
   --pv-expense: oklch(0.7 0.16 26);
   --pv-expense-dim: oklch(0.7 0.16 26 / 14%);
+}
+
+/* ไม่มีธีมสว่างแยกแล้ว แต่กันไว้เผื่อมี class .dark ค้างอยู่ที่ไหน ให้หน้าตาเหมือน :root เป๊ะ ไม่ขัดกัน */
+.dark {
+  --background: oklch(0.17 0.02 255);
+  --foreground: oklch(0.97 0.005 255);
+  --card: oklch(0.23 0.02 255);
+  --card-foreground: oklch(0.97 0.005 255);
+  --primary: oklch(0.8 0.13 88);
+  --primary-foreground: oklch(0.17 0.02 255);
+  --secondary: oklch(0.23 0.02 255);
+  --secondary-foreground: oklch(0.97 0.005 255);
+  --muted: oklch(0.2 0.02 255);
+  --muted-foreground: oklch(0.62 0.02 255);
+  --accent: oklch(0.27 0.025 255);
+  --accent-foreground: oklch(0.97 0.005 255);
+  --destructive: oklch(0.7 0.16 26);
+  --success: oklch(0.72 0.13 155);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.8 0.13 88);
+}
+
+.pv-theme {
   background: var(--pv-bg);
   color: var(--pv-ink);
 }
